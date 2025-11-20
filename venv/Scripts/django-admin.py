@@ -1,4 +1,4 @@
-#!D:\FF\000耿老师\code\AI_Code\Need_To_Do\need_to_do\venv\Scripts\python.exe
+#!D:\code\AI_Code\Need_To_Do2\venv\Scripts\python.exe
 # When the django-admin.py deprecation ends, remove this script.
 import warnings
 

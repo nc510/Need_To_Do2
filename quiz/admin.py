@@ -6,6 +6,10 @@ from django import forms
 from .models import Question, TestPaper, Profile
 import pandas as pd
 import json
+import logging
+
+# 配置日志记录
+logger = logging.getLogger(__name__)
 
 class QuestionImportForm(forms.Form):
     excel_file = forms.FileField(label='Excel文件')
@@ -22,10 +26,64 @@ class QuestionAdmin(admin.ModelAdmin):
     search_fields = ('content', 'explanation')
     ordering = ('-created_at',)
     change_list_template = 'admin/quiz/question/change_list.html'
+    actions = ['batch_delete_questions']  # 添加自定义批量删除动作
+    
+    def batch_delete_questions(self, request, queryset):
+        """批量删除题目，使用分批处理避免超时"""
+        total_count = queryset.count()
+        if total_count == 0:
+            return
+        
+        # 每批删除的数量
+        batch_size = 100
+        deleted_count = 0
+        
+        # 分批删除
+        from django.db import transaction
+        from django.utils.translation import gettext as _
+        
+        try:
+            # 获取所有要删除的题目ID
+            all_ids = list(queryset.values_list('id', flat=True))
+            
+            # 按批次删除
+            for i in range(0, len(all_ids), batch_size):
+                batch_ids = all_ids[i:i+batch_size]
+                # 使用事务确保每批删除的原子性
+                with transaction.atomic():
+                    # 先删除关联的记录（避免级联删除超时）
+                    from .models import AnswerRecord, WrongQuestion, TestPaper
+                    
+                    # 删除相关的答题记录
+                    AnswerRecord.objects.filter(question_id__in=batch_ids).delete()
+                    
+                    # 删除相关的错题记录
+                    WrongQuestion.objects.filter(question_id__in=batch_ids).delete()
+                    
+                    # 从试卷中移除题目（避免多对多关系级联删除问题）
+                    for test_paper in TestPaper.objects.all():
+                        # 使用ID列表而不是QuerySet对象
+                        test_paper.questions.remove(*Question.objects.filter(id__in=batch_ids))
+                    
+                    # 删除题目本身
+                    batch_deleted = Question.objects.filter(id__in=batch_ids).delete()[0]
+                    deleted_count += batch_deleted
+                    
+                    # 记录进度
+                    logger.info(f'已删除 {deleted_count}/{total_count} 道题目')
+            
+            self.message_user(request, _(f'成功删除 {deleted_count} 道题目'))
+        except Exception as e:
+            logger.error(f'批量删除题目失败: {str(e)}')
+            self.message_user(request, _(f'删除失败: {str(e)}'), level=messages.ERROR)
+    
+    batch_delete_questions.short_description = '分批删除选中的题目 (适合大量删除)'
     
     # 在管理界面添加批量导入按钮和处理导入逻辑
     def changelist_view(self, request, extra_context=None):
-        if request.method == 'POST' and 'excel_file' in request.FILES:
+        # 只有明确是导入文件的POST请求才执行自定义逻辑
+        # 所有其他POST请求（包括删除操作）都交给Django默认处理
+        if request.method == 'POST' and 'excel_file' in request.FILES and '_selected_action' not in request.POST:
             import_form = QuestionImportForm(request.POST, request.FILES)
             if import_form.is_valid():
                 excel_file = import_form.cleaned_data['excel_file']
@@ -75,11 +133,23 @@ class QuestionAdmin(admin.ModelAdmin):
                             question_type_int = type_mapping[question_type]
 
                         # 创建Question对象
+                        # 处理正确选项，确保格式标准化
+                        correct_answer = row['正确选项']
+                        if pd.notnull(correct_answer):
+                            if isinstance(correct_answer, str):
+                                # 去除首尾空格
+                                correct_answer = correct_answer.strip()
+                                # 确保答案是大写字母
+                                correct_answer = correct_answer.upper()
+                            else:
+                                # 处理非字符串类型的答案（如数字等）
+                                correct_answer = str(correct_answer).strip().upper()
+                        
                         question = Question(
                             type=question_type_int,
                             content=row['题目'],
                             options=options,
-                            correct_answer=row['正确选项'],
+                            correct_answer=correct_answer,
                             score=row.get('分值', 1),
                             explanation=row.get('解析', ''),
                         )
@@ -90,10 +160,15 @@ class QuestionAdmin(admin.ModelAdmin):
                 else:
                     messages.success(request, f'成功导入{len(df)}道题目')
                 return HttpResponseRedirect(reverse('admin:quiz_question_changelist'))
-
-        # 如果不是导入请求，渲染列表页面
+        
+        # 增加批量删除功能的说明信息
         extra_context = extra_context or {}
         extra_context['import_form'] = QuestionImportForm()
+        
+        # 显示当前题目总数
+        total_questions = Question.objects.count()
+        extra_context['total_questions'] = total_questions
+        
         return super().changelist_view(request, extra_context=extra_context)
         
 class TestPaperImportForm(forms.Form):
@@ -113,10 +188,15 @@ class TestPaperAdmin(admin.ModelAdmin):
                         # Skip empty rows
                         if row.isnull().all():
                             continue
-                        # Handle question type mapping
-                        question_type_mapping = {'单选题': 1, '多选题': 2, '判断题': 3, '填空题': 4, '简答题': 5, '论述题': 6}
+                        # Handle question type mapping (只使用模型中定义的有效题型值)
+                        question_type_mapping = {'单选题': 1, '多选题': 1, '判断题': 2}
                         question_type = row.get('类型', '单选题')
-                        question_type_int = question_type_mapping.get(question_type, 1)
+                        # 将所有非判断题映射为选择题(1)，判断题映射为2
+                        question_type_int = 1  # 默认选择题
+                        if question_type in question_type_mapping:
+                            question_type_int = question_type_mapping[question_type]
+                        elif '判断' in question_type:
+                            question_type_int = 2
                         
                         # 转换选项为JSON格式
                         options = {}
@@ -134,11 +214,23 @@ class TestPaperAdmin(admin.ModelAdmin):
                                 options[option_key] = row[f'Option {option_key}']
                             elif f'option_{option_key}' in row and pd.notnull(row[f'option_{option_key}']):
                                 options[option_key] = row[f'option_{option_key}']
+                        # 处理正确选项，确保格式标准化
+                        correct_answer = row.get('正确选项', '')
+                        if pd.notnull(correct_answer):
+                            if isinstance(correct_answer, str):
+                                # 去除首尾空格
+                                correct_answer = correct_answer.strip()
+                                # 确保答案是大写字母
+                                correct_answer = correct_answer.upper()
+                            else:
+                                # 处理非字符串类型的答案（如数字等）
+                                correct_answer = str(correct_answer).strip().upper()
+                        
                         question = Question(
                             type=question_type_int,
                             content=row.get('题目', ''),
                             options=options,
-                            correct_answer=row.get('正确选项', ''),
+                            correct_answer=correct_answer,
                             score=row.get('分值', 1),
                             explanation=row.get('解析', '')
                         )

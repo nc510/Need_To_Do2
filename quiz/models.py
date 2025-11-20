@@ -7,7 +7,7 @@ from django.dispatch import receiver
 
 class Question(models.Model):
     # 题目类型：1-选择题，2-判断题
-    TYPE_CHOICE = (1, '选择题'), (2, '判断题')
+    TYPE_CHOICE = ((1, '选择题'), (2, '判断题'))
     type = models.IntegerField(choices=TYPE_CHOICE, verbose_name='题目类型')
     content = models.TextField(verbose_name='题目内容')
     options = models.JSONField(verbose_name='选项', default=dict, blank=True, help_text='选择题选项，格式：{"A":"选项内容","B":"选项内容"}')
@@ -24,6 +24,77 @@ class Question(models.Model):
 
     def __str__(self):
         return self.content
+    
+    def clean(self):
+        """模型级别的验证方法"""
+        from django.core.exceptions import ValidationError
+        
+        # 验证题型必须是1或2（虽然有choices约束，但增加明确的验证）
+        if self.type not in [1, 2]:
+            raise ValidationError(f'无效的题型: {self.type}，必须是1(选择题)或2(判断题)')
+        
+        # 对于选择题，验证选项和答案
+        if self.type == 1:
+            if not self.options:
+                raise ValidationError('选择题必须提供选项')
+            if not isinstance(self.options, dict):
+                raise ValidationError('选项必须是字典格式')
+            
+            # 增强的正确答案验证逻辑
+            if self.correct_answer:
+                # 1. 首先检查答案是否直接在选项键中
+                if self.correct_answer in self.options:
+                    pass  # 答案在选项中，验证通过
+                else:
+                    # 2. 尝试处理可能的空格或格式问题
+                    normalized_answer = self.correct_answer.strip()
+                    if normalized_answer in self.options:
+                        self.correct_answer = normalized_answer  # 更新为标准化的答案
+                    # 3. 对于选择题，确保答案是大写字母并在选项中
+                    elif normalized_answer.upper() in ['A', 'B', 'C', 'D'] and normalized_answer.upper() in self.options:
+                        self.correct_answer = normalized_answer.upper()  # 确保答案是大写字母
+                    # 4. 大小写不敏感的匹配
+                    elif any(normalized_answer.lower() == str(key).lower() for key in self.options.keys()):
+                        # 找到匹配的键
+                        for key in self.options.keys():
+                            if normalized_answer.lower() == str(key).lower():
+                                self.correct_answer = key
+                                break
+                    # 5. 检查答案是否在选项值中
+                    elif any(normalized_answer in str(value) for value in self.options.values()):
+                        # 尝试找到匹配的选项键
+                        for key, value in self.options.items():
+                            if normalized_answer in str(value):
+                                self.correct_answer = key
+                                break
+                    else:
+                        # 所有尝试都失败，才抛出验证错误
+                        # 修正错误消息格式，确保中文正确显示
+                        raise ValidationError(f'正确答案不在提供的选项中')
+        
+        # 对于判断题，设置默认选项并验证答案
+        elif self.type == 2:
+            # 判断题默认设置A和B选项
+            if not self.options:
+                self.options = {'A': '正确', 'B': '错误'}
+            # 增强的判断题答案验证
+            if self.correct_answer:
+                # 将中文答案转换为对应的选项键
+                answer_mapping = {
+                    '正确': 'A', '对': 'A',
+                    '错误': 'B', '错': 'B'
+                }
+                if self.correct_answer in answer_mapping:
+                    self.correct_answer = answer_mapping[self.correct_answer]
+                # 验证答案是否有效
+                valid_answers = ['A', 'B']
+                if self.correct_answer not in valid_answers:
+                    raise ValidationError('判断题答案必须是A/B或正确/错误或对/错')
+    
+    def save(self, *args, **kwargs):
+        """保存前先调用clean方法进行验证"""
+        self.clean()
+        super().save(*args, **kwargs)
 
 class TestPaper(models.Model):
     title = models.CharField(max_length=100, verbose_name='试卷标题')
@@ -60,7 +131,7 @@ class Profile(models.Model):
     # 与User模型一对一关联
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='用户')
     # 审核状态：0-未审核，1-审核通过，2-审核拒绝
-    APPROVAL_STATUS = (0, '未审核'), (1, '审核通过'), (2, '审核拒绝')
+    APPROVAL_STATUS = ((0, '未审核'), (1, '审核通过'), (2, '审核拒绝'))
     approval_status = models.IntegerField(choices=APPROVAL_STATUS, default=0, verbose_name='审核状态')
     phone_number = models.CharField(max_length=11, verbose_name='手机号码', blank=True, null=True, unique=True)
     qq_number = models.CharField(max_length=20, verbose_name='QQ号码', blank=True, null=True)
