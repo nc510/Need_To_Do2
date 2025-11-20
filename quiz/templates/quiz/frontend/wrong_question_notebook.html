@@ -1,0 +1,165 @@
+{% extends 'quiz/frontend/base.html' %}
+{% block title %}错题本{% endblock %}
+{% block extra_styles %}
+<style>
+    .question {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #eee;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+    .question-options {
+        margin: 10px 0 20px 20px;
+    }
+    .question-options div {
+        margin: 5px 0;
+    }
+    .form-group {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #e9ecef;
+        border-radius: 5px;
+    }
+    .delete-btn {
+        padding: 6px 12px;
+        background-color: #dc3545;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 14px;
+    }
+    .delete-btn:hover {
+        background-color: #c82333;
+    }
+    .pagination {
+        margin-top: 30px;
+        text-align: center;
+    }
+    .pagination a, .pagination span {
+        padding: 8px 12px;
+        margin: 0 4px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #007bff;
+    }
+    .pagination span.current {
+        border: 1px solid #007bff;
+        background-color: #007bff;
+        color: white;
+    }
+    h1 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+{% block content %}
+    <h1>错题本</h1>
+    
+    {% if wrong_questions %}
+        <form method="post" action="{% url 'create_wrong_question_paper' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <input type="checkbox" id="select-all"> <strong>全选</strong>
+                <input type="submit" value="将所选错题组成试卷重新答题" style="margin-left: 20px; padding: 8px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            </div>
+            
+            {% for wrong_question in wrong_questions %}
+                <div class="question">
+                    <h4>{{ forloop.counter }}. (ID: {{ wrong_question.question.id }})
+                        <input type="checkbox" name="selected_questions" value="{{ wrong_question.question.id }}" id="question-{{ wrong_question.question.id }}" style="margin-right: 10px; margin-left: 10px;">
+                        <label for="question-{{ wrong_question.question.id }}">{{ wrong_question.question.content }}</label>
+                    </h4>
+                    <input type="hidden" name="question_id" value="{{ wrong_question.question.id }}">
+                    
+                    {% if wrong_question.question.type == 1 %} <!-- 选择题 -->
+                        <div class="question-options">
+                            {% for key, value in wrong_question.question.options.items %}
+                                <div>
+                                    <strong>{{ key }}.</strong> {{ value }}
+                                    {% if key == wrong_question.question.correct_answer %}
+                                        <span style="color: #4CAF50; margin-left: 10px;">(正确答案)</span>
+                                    {% elif key == wrong_question.user_answer %}
+                                        <span style="color: #f44336; margin-left: 10px;">(您的答案)</span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% elif wrong_question.question.type == 2 %} <!-- 判断题 -->
+                        <div class="question-options">
+                            <div>
+                                <strong>对.</strong> 
+                                {% if '对' == wrong_question.question.correct_answer %}
+                                    <span style="color: #4CAF50; margin-left: 10px;">(正确答案)</span>
+                                {% elif '对' == wrong_question.user_answer %}
+                                    <span style="color: #f44336; margin-left: 10px;">(您的答案)</span>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <strong>错.</strong> 
+                                {% if '错' == wrong_question.question.correct_answer %}
+                                    <span style="color: #4CAF50; margin-left: 10px;">(正确答案)</span>
+                                {% elif '错' == wrong_question.user_answer %}
+                                    <span style="color: #f44336; margin-left: 10px;">(您的答案)</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <p><strong>您的答案:</strong> {{ wrong_question.user_answer|default:"未答" }}</p>
+                    <p><strong>正确答案:</strong> {{ wrong_question.question.correct_answer }}</p>
+                    <p><strong>添加时间:</strong> {{ wrong_question.added_at }}</p>
+                    
+                    {% if wrong_question.question.explanation %}
+                        <div style="margin-top: 15px; padding: 10px; background-color: #e3f2fd; border-left: 4px solid #2196f3;">
+                            <strong>解析:</strong> {{ wrong_question.question.explanation }}
+                        </div>
+                    {% endif %}
+                    
+                    <div style="margin-top: 15px; text-align: right;">
+                        <a href="{% url 'delete_wrong_question' wrong_question.id %}" class="delete-btn" onclick="return confirm('确定要删除这道错题吗？');">删除错题</a>
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <!-- 分页 -->
+            {% if wrong_questions.has_other_pages %}
+                <div class="pagination">
+                    {% if wrong_questions.has_previous %}
+                        <a href="?page={{ wrong_questions.previous_page_number }}">&laquo;</a>
+                    {% else %}
+                        <span>&laquo;</span>
+                    {% endif %}
+                    
+                    {% for i in wrong_questions.paginator.page_range %}
+                        {% if wrong_questions.number == i %}
+                            <span class="current">{{ i }}</span>
+                        {% else %}
+                            <a href="?page={{ i }}">{{ i }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if wrong_questions.has_next %}
+                        <a href="?page={{ wrong_questions.next_page_number }}">&raquo;</a>
+                    {% else %}
+                        <span>&raquo;</span>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </form>
+    {% else %}
+        <p>您的错题本中没有题目。</p>
+    {% endif %}
+    
+    <script>
+        // 全选功能实现
+        document.getElementById('select-all').addEventListener('click', function() {
+            var checkboxes = document.querySelectorAll('input[name="selected_questions"]');
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = document.getElementById('select-all').checked;
+            });
+        });
+    </script>
+{% endblock %}

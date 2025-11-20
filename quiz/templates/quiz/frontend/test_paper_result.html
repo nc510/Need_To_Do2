@@ -1,0 +1,223 @@
+{% extends 'quiz/frontend/base.html' %}
+{% block title %}考试结果{% endblock %}
+{% block extra_styles %}
+<style>
+        /* 全局样式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 容器样式 */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+        }
+
+        /* 标题样式 */
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* 结果概览 */
+        .result-overview {
+            background-color: #fafafa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .result-overview h2 {
+            color: #2ecc71;
+            margin-bottom: 15px;
+        }
+
+        .result-summary {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        .result-item {
+            display: inline-block;
+            margin: 0 15px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 题目结果 */
+        .question-results {
+            margin-bottom: 30px;
+        }
+
+        .question-result {
+            margin-bottom: 25px;
+            padding: 20px;
+            background-color: #fafafa;
+            border-radius: 8px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .question-header {
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        /* 题目类型 */
+        .question-type {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #3498db;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+
+        /* 题目内容 */
+        .question-content {
+            margin-bottom: 15px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        /* 题目选项 */
+        .question-options {
+            margin-bottom: 15px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .option-item {
+            margin-left: 20px;
+        }
+
+        /* 答案信息 */
+        .answer-info {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .result-correct {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        .result-wrong {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .correct-answer {
+            color: #2ecc71;
+        }
+
+        .user-answer {
+            color: #3498db;
+        }
+
+        /* 解析 */
+        .explanation {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #fff;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* 返回按钮 */
+        .back-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .back-btn:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{% url 'test_paper_list' %}" class="back-btn">返回试卷列表</a>
+        <h1>{{ test_paper.title }} - 考试结果</h1>
+
+        <div class="result-overview">
+            <h2>考试结果概览</h2>
+            <div class="result-summary">
+                <div class="result-item">
+                    <span>总得分:</span>
+                    <span class="result-correct">{{ total_score }}</span>/{{ test_paper.total_score }}分
+                </div>
+                <div class="result-item">
+                    <span>正确:</span>
+                    <span class="result-correct">{{ correct_count }}</span>题
+                </div>
+                <div class="result-item">
+                    <span>错误:</span>
+                    <span class="result-wrong">{{ wrong_count }}</span>题
+                </div>
+                <div class="result-item">
+                    <span>总题数:</span>
+                    <span>{{ total_questions }}</span>题
+                </div>
+            </div>
+        </div>
+
+        <div class="question-results">
+            {% for result in question_results %}
+                <div class="question-result">
+                    <div class="question-header">
+                        <span class="question-type">
+                            {% if result.question.type == 1 %}选择题{% else %}判断题{% endif %}
+                        </span>
+                        <span>第{{ forloop.counter }}题 ({{ result.score }}分)</span>
+                        <span class="{% if result.result == '正确' %}result-correct{% else %}result-wrong{% endif %}">
+                            &nbsp;&nbsp;{{ result.result }}
+                        </span>
+                    </div>
+                    <div class="question-content">{{ result.question.content }}</div>
+                    {% if result.question.options %}
+                        <div class="question-options">
+                            {% for option_key, option_value in result.question.options.items %}
+                                <div class="option-item">{{ option_key }}: {{ option_value }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="answer-info">
+                        <p>你的答案: <span class="user-answer">{{ result.user_answer|default:'' }}</span></p>
+                        <p>正确答案: <span class="correct-answer">{{ result.correct_answer }}</span></p>
+                    </div>
+                    {% if result.question.explanation %}
+                        <div class="explanation">
+                            <strong>解析:</strong> {{ result.question.explanation }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

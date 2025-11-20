@@ -1,0 +1,36 @@
+{% extends 'quiz/frontend/base.html' %}
+{% block title %}答题结果{% endblock %}
+{% block extra_styles %}
+<style>
+    .result-container { margin: 30px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9; }
+    .result { font-size: 2em; font-weight: bold; text-align: center; margin: 20px 0; }
+    .result.correct { color: #4CAF50; }
+    .result.wrong { color: #f44336; }
+    .question-content { font-size: 1.2em; margin: 20px 0; line-height: 1.6; }
+    .answer-info { margin: 20px 0; font-size: 1.1em; }
+    .option-item { margin: 5px 0; }
+    .correct-answer { color: #4CAF50; }
+    .user-answer { color: #2196F3; }
+    .btn { display: inline-block; margin: 10px; padding: 10px 20px; text-decoration: none; border-radius: 3px; font-size: 1.1em; }
+    .back-btn { background-color: #f1f1f1; color: #333; }
+    .back-btn:hover { background-color: #ddd; }
+    .next-btn { background-color: #4CAF50; color: white; }
+    .next-btn:hover { background-color: #45a049; }
+</style>
+{% endblock %}
+{% block content %}
+    <h1>答题结果</h1>
+    <div class="result-container">
+        <div class="result {% if result == '正确' %}correct{% else %}wrong{% endif %}">
+            {{ result }}
+        </div>
+        <div class="question-content">{{ question.content }}</div>
+        <div class="answer-info">
+            <p>你的答案：<span class="user-answer">{{ user_answer|default:"未答" }}</span></p>
+            <p>正确答案：<span class="correct-answer">{{ correct_answer }}</span></p>
+        </div>
+        <div style="text-align: center;">
+            <a href="{% url 'test_paper_list' %}" class="btn back-btn">返回试卷列表</a>
+        </div>
+    </div>
+{% endblock %}

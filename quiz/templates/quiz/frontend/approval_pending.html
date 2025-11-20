@@ -1,0 +1,15 @@
+{% extends 'quiz/frontend/base.html' %}
+{% block title %}审核状态{% endblock %}
+{% block content %}
+    <h1>您的账号审核状态</h1>
+    <div class="test-paper">
+        <h2>审核状态：{{ status }}</h2>
+        {% if status == '未审核' %}
+            <p>您的注册申请正在审核中，请耐心等待管理员审核。</p>
+            <p>审核通过后，您将可以正常进行答题操作。</p>
+        {% elif status == '审核拒绝' %}
+            <p>很抱歉，您的注册申请未通过审核。</p>
+            <p>如果您有疑问，请联系管理员。</p>
+        {% endif %}
+    </div>
+{% endblock %}

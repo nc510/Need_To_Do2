@@ -1,0 +1,208 @@
+{% extends 'quiz/frontend/base.html' %}
+{% block title %}答题记录详情{% endblock %}
+{% block extra_styles %}
+<style>
+        .record-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .record-header {
+            background-color: white;
+            padding: 24px;
+            margin-bottom: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        }
+        h1 {
+            margin: 0 0 12px 0;
+            font-size: 28px;
+            color: #2c3e50;
+            font-weight: 600;
+            text-align: center;
+        }
+        .record-header h2 {
+            margin: 0 0 12px 0;
+            font-size: 24px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        .record-header p {
+            margin: 8px 0;
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        .questions-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            min-height: 500px;
+        }
+        .question-item {
+            margin-bottom: 35px;
+            padding: 25px;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .question-item:last-child {
+            margin-bottom: 0;
+        }
+        .question-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+        .question-number {
+            font-size: 20px;
+            font-weight: bold;
+            color: #3498db;
+            margin-right: 15px;
+            min-width: 40px;
+            text-align: center;
+        }
+        .question-content {
+            font-size: 18px;
+            color: #2c3e50;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            padding: 0 10px;
+        }
+        .question-type {
+            font-size: 14px;
+            color: #95a5a6;
+            background-color: #ecf0f1;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-left: auto;
+        }
+        .options {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+        .option {
+            margin: 10px 0;
+            padding: 12px 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            color: #555;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .option:hover {
+            background-color: #f5f5f5;
+        }
+        .option::before {
+            content: attr(data-option);
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            color: #3498db;
+            width: 25px;
+        }
+        .option span {
+            margin-left: 30px;
+        }
+        .option.user-selected {
+            background-color: #ffebee;
+            border-color: #f44336;
+        }
+        .option.correct {
+            background-color: #e8f5e9;
+            border-color: #4caf50;
+        }
+        .answers {
+            margin: 20px 0;
+            padding: 18px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        .answers p {
+            margin: 10px 0;
+            font-size: 15px;
+            color: #333;
+        }
+        .answers strong {
+            color: #2c3e50;
+        }
+        .explanation {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+        .explanation strong {
+            color: #1976d2;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .explanation p {
+            margin: 8px 0;
+            color: #333;
+            line-height: 1.6;
+        }
+        .correct {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .incorrect {
+            color: #f44336;
+            font-weight: bold;
+        }
+</style>
+{% endblock %}
+{% block content %}
+    <h1>答题记录详情</h1>
+    
+    <div class="record-container">
+        <div class="record-header">
+            <h2>{{ test_record.test_paper.title }}</h2>
+            <p>得分：{{ test_record.score }}/{{ test_record.total_score }}</p>
+            <p>完成时间：{{ test_record.completed_at }}</p>
+        </div>
+        <div class="questions-container">
+            {% for answer_record in answer_records %}
+                <div class="question-item">
+                    <div class="question-header">
+                        <div class="question-number">{{ forloop.counter }}</div>
+                        <div class="question-content">{{ answer_record.original_question_content }}</div>
+                        <div class="question-type">{% if answer_record.original_question_type == 1 %}选择题{% else %}判断题{% endif %}</div>
+                    </div>
+                    
+                    {% if answer_record.original_question_type == 1 and answer_record.original_options %}
+                        <div class="options">
+                            {% for option_key, option_value in answer_record.original_options.items %}
+                                <div class="option {% if option_key == answer_record.user_answer %}user-selected{% endif %} {% if option_key == answer_record.correct_answer %}correct{% endif %}" data-option="{{ option_key }}">
+                                    <span>{{ option_value }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="answers">
+                        <p><strong>你的答案：</strong>{{ answer_record.user_answer|default:'未答' }}</p>
+                        <p><strong>正确答案：</strong>{{ answer_record.correct_answer }}</p>
+                        <p><strong>结果：</strong>{% if answer_record.is_correct %}<span class="correct">正确</span>{% else %}<span class="incorrect">错误</span>{% endif %}</p>
+                    </div>
+                    
+                    {% if answer_record.original_explanation %}
+                        <div class="explanation">
+                            <strong>解析：</strong>
+                            <p>{{ answer_record.original_explanation }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'quiz/frontend/base.html' %}
+{% block title %}用户中心{% endblock %}
+
+{% block extra_styles %}
+<style>
+    h1 {
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .user-info {
+        background-color: #fafafa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        border-left: 4px solid #2ecc71;
+    }
+    .user-info h3 {
+        margin-bottom: 15px;
+        color: #333;
+    }
+    .user-info p {
+        margin: 8px 0;
+        color: #666;
+    }
+    .user-functions {
+        background-color: #fafafa;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 4px solid #2ecc71;
+    }
+    .user-functions h3 {
+        margin-bottom: 15px;
+        color: #333;
+    }
+    .user-functions ul {
+        list-style-type: none;
+        padding: 0;
+    }
+    .user-functions li {
+        margin-bottom: 10px;
+    }
+    .user-functions a {
+        color: #2ecc71;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s ease;
+    }
+    .user-functions a:hover {
+        color: #27ae60;
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <h1>用户中心</h1>
+    <div class="user-info">
+        <h3>个人信息</h3>
+        <p>用户名：{{ user.username }}</p>
+        <p>邮箱：{{ user.email }}</p>
+        <p>注册时间：{{ user.date_joined }}</p>
+    </div>
+    
+    <div class="user-functions">
+        <h3>功能菜单</h3>
+        <ul>
+            <li><a href="{% url 'test_history' %}">答题历史</a></li>
+            <li><a href="{% url 'wrong_question_notebook' %}">查看错题本</a></li>
+
+        </ul>
+    </div>
+{% endblock %}

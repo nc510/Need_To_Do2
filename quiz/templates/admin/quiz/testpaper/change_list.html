@@ -1,0 +1,24 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label='quiz' %}">Quiz</a>
+    &rsaquo; Test Papers
+  </div>
+{% endblock %}
+
+{% block object-tools %}
+  <h2>Custom Template Loaded!</h2>
+  <div style="display: block; margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #f0f0f0;">
+    <form method="post" enctype="multipart/form-data" style="margin: 0;">
+      {% csrf_token %}
+      {{ import_form.as_p }}
+      <button type="submit" name="_import" style="background: #007bff; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;">
+        Import Excel
+      </button>
+    </form>
+  </div>
+  {{ block.super }}
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'quiz/frontend/base.html' %}
+{% block title %}题目详情{% endblock %}
+{% block extra_styles %}
+<style>
+    .question-container { margin: 30px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9; }
+    .question-type { font-size: 1.1em; color: #666; margin-bottom: 15px; }
+    .question-content { font-size: 1.3em; margin-bottom: 20px; line-height: 1.6; }
+    .options { margin-bottom: 20px; }
+    .option-item { margin: 10px 0; font-size: 1.1em; }
+    input[type="radio"] { margin-right: 10px; transform: scale(1.2); }
+    .submit-btn { display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 3px; font-size: 1.1em; cursor: pointer; }
+    .submit-btn:hover { background-color: #45a049; }
+    .back-link { display: inline-block; margin-top: 20px; padding: 8px 16px; background-color: #f1f1f1; color: #333; text-decoration: none; border-radius: 3px; }
+    .back-link:hover { background-color: #ddd; }
+</style>
+{% endblock %}
+{% block content %}
+    <h1>题目详情</h1>
+    <div class="question-container">
+        <div class="question-type">
+            {{ question.get_type_display }}
+        </div>
+        <div class="question-content">{{ question.content }}</div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="options">
+                {% if question.type == 1 %} <!-- 选择题 -->
+                    {% for option in question.options.items %}
+                        <div class="option-item">
+                            <input type="radio" name="answer" id="option{{ forloop.counter }}" value="{{ option.0 }}">
+                            <label for="option{{ forloop.counter }}">{{ option.0 }}. {{ option.1 }}</label>
+                        </div>
+                    {% endfor %}
+                {% elif question.type == 2 %} <!-- 判断题 -->
+                    <div class="option-item">
+                        <input type="radio" name="answer" id="optionA" value="对">
+                        <label for="optionA">对</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="radio" name="answer" id="optionB" value="错">
+                        <label for="optionB">错</label>
+                    </div>
+                {% endif %}
+            </div>
+            <button type="submit" class="submit-btn">提交答案</button>
+        </form>
+        <a href="{% url 'test_paper_list' %}" class="back-link">返回试卷列表</a>
+    </div>
+{% endblock %}

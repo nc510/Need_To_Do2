@@ -1,0 +1,13 @@
+{% extends "admin/change_list.html" %}
+
+{% block change_list_top %}
+  <div>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {{ import_form.as_p }}
+      <input type="submit" value="导入题目" class="default" style="margin-top: 10px;" />
+    </form>
+    <br />
+  </div>
+  {{ block.super }}
+{% endblock %}

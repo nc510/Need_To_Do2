@@ -1,0 +1,162 @@
+{% extends 'admin/change_form.html' %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrahead %}
+    {{ block.super }}
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <script type="text/javascript">
+        // 更新单个filter_horizontal的计数和编号
+        function updateFilterHorizontal(container) {
+            var availableBox = container.querySelector('.selector-available');
+            var chosenBox = container.querySelector('.selector-chosen');
+            
+            if (availableBox && chosenBox) {
+                // 获取当前的题目列表
+                var availableSelect = availableBox.querySelector('select');
+                var availableOptions = availableSelect.querySelectorAll('option');
+                var chosenSelect = chosenBox.querySelector('select');
+                var chosenOptions = chosenSelect.querySelectorAll('option');
+                
+                // 在Available区域显示题目总数
+                var availableCount = availableOptions.length;
+                var availableTitle = availableBox.querySelector('h2');
+                if (availableTitle) {
+                    // 移除旧的计数
+                    var oldAvailableCount = availableTitle.querySelector('.count');
+                    if (oldAvailableCount) {
+                        oldAvailableCount.remove();
+                    }
+                    // 添加新的计数
+                    availableTitle.innerHTML += ' <span class="count">(' + availableCount + ')</span>';
+                }
+                
+                // 在Chosen区域显示题目总数
+                var chosenCount = chosenOptions.length;
+                var chosenTitle = chosenBox.querySelector('h2');
+                if (chosenTitle) {
+                    // 移除旧的计数
+                    var oldChosenCount = chosenTitle.querySelector('.count');
+                    if (oldChosenCount) {
+                        oldChosenCount.remove();
+                    }
+                    // 添加新的计数
+                    chosenTitle.innerHTML += ' <span class="count">(' + chosenCount + ')</span>';
+                }
+                
+                // 在Available列表中显示数据库题号
+        availableOptions.forEach(function(option) {
+            // 如果已经添加过ID，先移除
+            var text = option.innerHTML;
+            if (text.startsWith('[')) {
+                text = text.substring(text.indexOf('] ') + 2);
+            }
+            // 重新添加ID
+            var questionId = option.value;
+            var displayText = '[' + questionId + '] ' + text;
+            option.innerHTML = displayText;
+            
+            // 更新对应的可见列表项
+            var availableResults = availableSelect.previousElementSibling;
+            if (availableResults && availableResults.tagName === 'UL') {
+                var listItem = availableResults.querySelector('li input[value="' + questionId + '"]').closest('li');
+                if (listItem) {
+                    var label = listItem.querySelector('label');
+                    if (label) {
+                        var input = label.querySelector('input');
+                        var inputHtml = input.outerHTML;
+                        label.innerHTML = inputHtml + ' ' + displayText;
+                    }
+                }
+            }
+        });
+        
+        // 在Chosen列表中显示已选数量的序号
+        chosenOptions.forEach(function(option, index) {
+            // 如果已经添加过序号，先移除
+            var text = option.innerHTML;
+            if (text.startsWith('[')) {
+                text = text.substring(text.indexOf('] ') + 2);
+            }
+            // 重新添加序号
+            var displayText = '[' + (index + 1) + '] ' + text;
+            option.innerHTML = displayText;
+            
+            // 更新对应的可见列表项
+            var chosenResults = chosenSelect.previousElementSibling;
+            if (chosenResults && chosenResults.tagName === 'UL') {
+                var listItem = chosenResults.querySelector('li input[value="' + option.value + '"]').closest('li');
+                if (listItem) {
+                    var label = listItem.querySelector('label');
+                    if (label) {
+                        var input = label.querySelector('input');
+                        var inputHtml = input.outerHTML;
+                        label.innerHTML = inputHtml + ' ' + displayText;
+                    }
+                }
+            }
+        });
+            }
+        }
+        
+        // 页面加载完成后执行
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        // 找到所有的filter_horizontal选择器
+        var filterHorizontals = document.querySelectorAll('.selector');
+        
+        filterHorizontals.forEach(function(container) {
+            // 初始更新
+            updateFilterHorizontal(container);
+            
+            // 创建一个 MutationObserver 来监听选项的动态变化
+            var observer = new MutationObserver(function(mutations) {
+                updateFilterHorizontal(container);
+            });
+            
+            // 找到可用和已选的选项框
+            var availableBox = container.querySelector('.selector-available');
+            var chosenBox = container.querySelector('.selector-chosen');
+            
+            // 监听选项框的子节点变化
+            if (availableBox) {
+                var availableSelect = availableBox.querySelector('select');
+                observer.observe(availableSelect, { childList: true });
+            }
+            
+            if (chosenBox) {
+                var chosenSelect = chosenBox.querySelector('select');
+                observer.observe(chosenSelect, { childList: true });
+            }
+            
+            // 添加事件监听器，处理添加/移除题目
+            var addButton = container.querySelector('.selector-add');
+            var removeButton = container.querySelector('.selector-remove');
+            
+            // 处理添加题目
+            if (addButton) {
+                addButton.addEventListener('click', function() {
+                    setTimeout(function() { updateFilterHorizontal(container); }, 100);
+                });
+            }
+            
+            // 处理移除题目
+            if (removeButton) {
+                removeButton.addEventListener('click', function() {
+                    setTimeout(function() { updateFilterHorizontal(container); }, 100);
+                });
+            }
+        });
+    }, 100); // 延迟执行以确保Django的JavaScript加载完成
+});
+    </script>
+    <style>
+        .count {
+            font-size: 12px;
+            color: #666;
+            font-weight: normal;
+        }
+    </style>
+{% endblock %}

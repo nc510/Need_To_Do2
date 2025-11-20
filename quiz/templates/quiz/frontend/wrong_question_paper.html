@@ -1,0 +1,47 @@
+{% extends 'quiz/frontend/base.html' %}
+{% block title %}错题本试卷{% endblock %}
+{% block content %}
+    <h1>错题本试卷</h1>
+    <div class="test-paper">
+        <h2>错题本试卷</h2>
+        <p>本试卷包含了您错题本中的所有题目，请认真作答。</p>
+        <p>答对的题目将从错题本中移除。</p>
+        
+        <form method="post" action="{% url 'submit_wrong_question_paper' %}">
+            {% csrf_token %}
+            
+            {% for wrong_question in wrong_questions %}
+                <div class="question">
+                    <h4>{{ forloop.counter }}. (ID: {{ wrong_question.question.id }}) {{ wrong_question.question.content }}</h4>
+                    <input type="hidden" name="question_id" value="{{ wrong_question.question.id }}">
+                    
+                    {% if wrong_question.question.type == 1 %} <!-- 选择题 -->
+                        <div class="question-options">
+                            {% for key, value in wrong_question.question.options.items %}
+                                <div>
+                                    <input type="radio" name="question_{{ wrong_question.question.id }}" value="{{ key }}">
+                                    <label>{{ key }}. {{ value }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% elif wrong_question.question.type == 2 %} <!-- 判断题 -->
+                        <div class="question-options">
+                            <div>
+                                <input type="radio" name="question_{{ wrong_question.question.id }}" value="对">
+                                <label>对</label>
+                            </div>
+                            <div>
+                                <input type="radio" name="question_{{ wrong_question.question.id }}" value="错">
+                                <label>错</label>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <div class="form-group">
+                <input type="submit" value="提交答案">
+            </div>
+        </form>
+    </div>
+{% endblock %}

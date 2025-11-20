@@ -1,0 +1,414 @@
+{% extends 'quiz/frontend/base.html' %}
+{% block title %}试卷详情{% endblock %}
+{% block extra_styles %}
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 容器样式 */
+        .paper-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+        }
+
+        /* 标题样式 */
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* 试卷基本信息 */
+    </style>
+{% endblock %}
+
+{% block content %}
+
+<style>
+        /* 试卷基本信息 */
+        .paper-info {
+            background-color: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #2ecc71;
+        }
+
+        .paper-description {
+            color: #666;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .paper-meta {
+            color: #999;
+            font-size: 12px;
+            margin-top: 15px;
+        }
+
+        /* 题目列表 */
+        .question-list {
+            margin-bottom: 30px;
+        }
+
+        .question-item {
+            margin-bottom: 25px;
+            padding: 20px;
+            background-color: #fafafa;
+            border-radius: 8px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .question-header {
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        /* 题目类型 */
+        .question-type {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #3498db;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+
+        /* 题目内容 */
+        .question-content {
+            margin-bottom: 15px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        /* 选项 */
+        .options {
+            margin-bottom: 15px;
+        }
+
+        .option {
+            margin-bottom: 8px;
+            color: #666;
+            padding-left: 35px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* 圆形单选按钮 */
+        .option::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border: 2px solid #3498db;
+            border-radius: 50%;
+            background-color: #fff;
+            transition: all 0.2s ease;
+        }
+
+        /* 选项字母（A, B, C, D） */
+        .option::before {
+            content: attr(data-option);
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            color: #3498db;
+            width: 20px;
+            text-align: left;
+        }
+
+        /* 选中状态的内圆点效果 */
+        .option.selected::after {
+            background-color: #3498db;
+            box-shadow: inset 0 0 0 3px #fff;
+        }
+
+        /* 题目分值 */
+        .question-score {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* 返回按钮 */
+        .back-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .back-btn:hover {
+            background-color: #2980b9;
+        }
+
+        /* 答题按钮 */
+        .submit-btn {
+            background-color: #2ecc71;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+        /* 提交按钮 */
+        .submit-btn:hover {
+            background-color: #27ae60;
+        }
+    </style>
+    <div class="paper-container">
+
+        <h1>{{ test_paper.title }}</h1>
+        
+        <div class="paper-info">
+            {% if test_paper.description %}
+                <div class="paper-description">{{ test_paper.description }}</div>
+            {% endif %}
+            <div class="paper-meta">
+                总分: {{ test_paper.total_score }}分 | 出题人: {{ test_paper.created_by }} | 创建时间: {{ test_paper.created_at|date:"Y-m-d H:i" }}
+            </div>
+        </div>
+
+        <!-- 答题模式选择 -->
+        <div class="test-mode-selector">
+            <label><input type="radio" name="test_mode" value="full" checked> 全页答题</label>
+            <label><input type="radio" name="test_mode" value="single"> 逐题答题</label>
+        </div>
+        <style>.test-mode-selector { margin-bottom: 20px; font-size: 16px; }</style>
+
+        <form id="test_paper_form" method="POST" action="{% url 'submit_test_paper' test_paper.id %}">
+            {% csrf_token %}
+            <div class="question-list">
+                {% for question in test_paper.questions.all %}
+                    <div class="question-item" data-question-id="{{ question.id }}" data-question-index="{{ forloop.counter0 }}">
+                        <div class="question-header">
+                            <span class="question-type">
+                                {% if question.type == 1 %}选择题{% else %}判断题{% endif %}
+                            </span>
+                            <span style="color: #2ecc71; font-weight: bold; margin-right: 10px;">[{{ forloop.counter }}]</span>
+                            {{ question.content }}
+                        </div>
+                        
+                        <div class="options">
+                            {% if question.type == 1 %} <!-- 选择题 -->
+                                <!-- Hidden radio inputs -->
+                                <input type="radio" name="question_{{ question.id }}" value="A" id="id_question_{{ question.id }}_A" style="display: none;">
+                                <input type="radio" name="question_{{ question.id }}" value="B" id="id_question_{{ question.id }}_B" style="display: none;">
+                                <input type="radio" name="question_{{ question.id }}" value="C" id="id_question_{{ question.id }}_C" style="display: none;">
+                                <input type="radio" name="question_{{ question.id }}" value="D" id="id_question_{{ question.id }}_D" style="display: none;">
+                                <!-- Visual options -->
+                                {% if 'A' in question.options %}
+                                    <div class="option" data-option="A">A. {{ question.options.A }}</div>
+                                {% elif 'a' in question.options %}
+                                    <div class="option" data-option="A">A. {{ question.options.a }}</div>
+                                {% endif %}
+                                {% if 'B' in question.options %}
+                                    <div class="option" data-option="B">B. {{ question.options.B }}</div>
+                                {% elif 'b' in question.options %}
+                                    <div class="option" data-option="B">B. {{ question.options.b }}</div>
+                                {% endif %}
+                                {% if 'C' in question.options %}
+                                    <div class="option" data-option="C">C. {{ question.options.C }}</div>
+                                {% elif 'c' in question.options %}
+                                    <div class="option" data-option="C">C. {{ question.options.c }}</div>
+                                {% endif %}
+                                {% if 'D' in question.options %}
+                                    <div class="option" data-option="D">D. {{ question.options.D }}</div>
+                                {% elif 'd' in question.options %}
+                                    <div class="option" data-option="D">D. {{ question.options.d }}</div>
+                                {% endif %}
+                            {% else %} <!-- 判断题 -->
+                                <!-- Hidden radio inputs -->
+                                <input type="radio" name="question_{{ question.id }}" value="对" id="id_question_{{ question.id }}_对" style="display: none;">
+                                <input type="radio" name="question_{{ question.id }}" value="错" id="id_question_{{ question.id }}_错" style="display: none;">
+                                <!-- Visual options -->
+                                <div class="option" data-option="对">对</div>
+                                <div class="option" data-option="错">错</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="question-score">分值: {{ question.score }}分</div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- 逐题答题导航 -->
+            <div class="question-navigation">
+                <button type="button" id="prev-question" disabled>上一题</button>
+                <span id="question-counter">1/{{ test_paper.questions.count }}</span>
+                <button type="button" id="next-question">下一题</button>
+            </div>
+            <style>.question-navigation { margin: 20px 0; text-align: center; }</style>
+            
+            <button type="submit" class="submit-btn">提交答案</button>
+        </form>
+    </div>
+    <script>
+        // 答题模式相关变量
+        let currentMode = 'full';
+        let currentQuestionIndex = 0;
+        const questionItems = document.querySelectorAll('.question-item');
+        const questionCount = questionItems.length;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化为全页模式
+            showAllQuestions();
+        });
+
+        // 模式选择切换
+        document.querySelectorAll('input[name="test_mode"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                currentMode = radio.value;
+                if (currentMode === 'single') {
+                    showSingleQuestion(currentQuestionIndex); // 保持当前题目
+                } else {
+                    showAllQuestions();
+                }
+            });
+        });
+
+        // 显示所有题目
+        function showAllQuestions() {
+            questionItems.forEach(item => {
+                item.style.display = 'block';
+            });
+            document.querySelector('.question-navigation').style.display = 'none';
+        }
+
+        // 显示单个题目
+        function showSingleQuestion(index) {
+            // 确保索引在有效范围内
+            index = Math.max(0, Math.min(index, questionCount - 1));
+            currentQuestionIndex = index;
+
+            // 隐藏所有题目
+            questionItems.forEach(item => {
+                item.style.display = 'none';
+            });
+
+            // 显示当前题目
+            if (questionItems[index]) {
+                questionItems[index].style.display = 'block';
+                // 滚动到当前题目
+                questionItems[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            // 更新导航按钮状态
+            updateNavigationButtons();
+
+            // 更新题目计数器
+            updateQuestionCounter();
+
+            // 显示导航栏
+            document.querySelector('.question-navigation').style.display = 'block';
+        }
+
+        // 更新导航按钮状态
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prev-question');
+            const nextBtn = document.getElementById('next-question');
+
+            prevBtn.disabled = currentQuestionIndex === 0;
+            nextBtn.disabled = currentQuestionIndex === questionCount - 1;
+        }
+
+        // 更新题目计数器
+        function updateQuestionCounter() {
+            const counter = document.getElementById('question-counter');
+            counter.textContent = `${currentQuestionIndex + 1}/${questionCount}`;
+        }
+
+        // 上一题按钮点击事件
+        document.getElementById('prev-question').addEventListener('click', () => {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                showSingleQuestion(currentQuestionIndex);
+            }
+        });
+
+        // 下一题按钮点击事件
+        document.getElementById('next-question').addEventListener('click', () => {
+            if (currentQuestionIndex < questionCount - 1) {
+                currentQuestionIndex++;
+                showSingleQuestion(currentQuestionIndex);
+            }
+        });
+    </script>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 选择题选项点击事件
+            document.querySelectorAll('.options').forEach(optionsDiv => {
+                const questionId = optionsDiv.closest('.question-item').dataset.questionId;
+                
+                optionsDiv.querySelectorAll('.option').forEach(optionDiv => {
+                    const optionText = optionDiv.dataset.option;
+                    const optionElement = document.querySelector(`input[name="question_${questionId}"][value="${optionText}"]`);
+                    
+                    // 页面加载时检查是否默认选中
+                    if (optionElement && optionElement.checked) {
+                        optionDiv.classList.add('selected');
+                    }
+                    
+                    // 选项点击事件
+                    optionDiv.addEventListener('click', () => {
+                        // 清除所有选项的选中状态
+                        optionsDiv.querySelectorAll('.option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        
+                        // 设置当前选项为选中状态
+                        optionDiv.classList.add('selected');
+                        
+                        // 同步更新隐藏的单选按钮状态
+                        if (optionElement) {
+                            optionElement.checked = true;
+                        }
+                    });
+                });
+            });
+
+
+
+            // 表单提交验证
+            const form = document.getElementById('test_paper_form');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                // 显示提交确认
+                if (confirm('确定要提交试卷吗？')) {
+                    form.submit();
+                }
+            });
+        });
+    </script>
+{% endblock %}

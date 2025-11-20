@@ -1,0 +1,230 @@
+{% extends 'quiz/frontend/base.html' %}
+{% block title %}错题本试卷结果{% endblock %}
+{% block extra_styles %}
+<style>
+        .record-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .record-header {
+            background-color: white;
+            padding: 24px;
+            margin-bottom: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        }
+        h1 {
+            margin: 0 0 12px 0;
+            font-size: 28px;
+            color: #2c3e50;
+            font-weight: 600;
+            text-align: center;
+        }
+        .record-header h2 {
+            margin: 0 0 12px 0;
+            font-size: 24px;
+            color: #2c3e50;
+            font-weight: 600;
+            text-align: center;
+        }
+        .record-header p {
+            margin: 8px 0;
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        .questions-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            min-height: 500px;
+        }
+        .question-item {
+            margin-bottom: 35px;
+            padding: 25px;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .question-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+        .question-number {
+            font-size: 20px;
+            font-weight: bold;
+            color: #3498db;
+            margin-right: 15px;
+            min-width: 40px;
+            text-align: center;
+        }
+        .question-content {
+            font-size: 18px;
+            color: #2c3e50;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            padding: 0 10px;
+        }
+        .question-type {
+            font-size: 14px;
+            color: #95a5a6;
+            background-color: #ecf0f1;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-left: auto;
+        }
+        .options {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+        .option {
+            margin: 10px 0;
+            padding: 12px 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            color: #555;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .option:hover {
+            background-color: #f5f5f5;
+        }
+        .option::before {
+            content: attr(data-option);
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            color: #3498db;
+            width: 25px;
+        }
+        .option span {
+            margin-left: 30px;
+        }
+        .option.user-selected {
+            background-color: #ffebee;
+            border-color: #f44336;
+        }
+        .option.correct {
+            background-color: #e8f5e9;
+            border-color: #4caf50;
+        }
+        .answers {
+            margin: 20px 0;
+            padding: 18px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        .answers p {
+            margin: 10px 0;
+            font-size: 15px;
+            color: #333;
+        }
+        .answers strong {
+            color: #2c3e50;
+        }
+        .explanation {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+        .explanation strong {
+            color: #1976d2;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .explanation p {
+            margin: 8px 0;
+            color: #333;
+            line-height: 1.6;
+        }
+        .correct {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .incorrect {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #3498db;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+</style>
+{% endblock %}
+{% block content %}
+    <h1>错题本试卷结果</h1>
+    <div class="record-container">
+        <div class="record-header">
+            <h2>答题结果</h2>
+        <p>总分：{{ total_score }}</p>
+        <p>得分：{{ obtained_score }}</p>
+        <p>正确题数：{{ correct_count }}</p>
+        <p>错题数：{{ wrong_count }}</p>
+        <p>总题数：{{ total_questions }}</p>
+        </div>
+        
+        <div class="questions-container">
+            <h3>详细答题情况</h3>
+            {% for result in question_results %}
+                <div class="question-item">
+                    <div class="question-header">
+                        <div class="question-number">{{ forloop.counter }}</div>
+                        <div class="question-content">{{ result.question.content }}</div>
+                        <div class="question-type">{% if result.question.type == 1 %}选择题{% else %}判断题{% endif %}</div>
+                    </div>
+                    
+                    {% if result.question.type == 1 and result.question.options %}
+                        <div class="options">
+                            {% for option_key, option_value in result.question.options.items %}
+                                <div class="option {% if option_key == result.user_answer %}user-selected{% endif %} {% if option_key == result.correct_answer %}correct{% endif %}" data-option="{{ option_key }}">
+                                    <span>{{ option_value }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="answers">
+                        <p><strong>您的答案：</strong> {{ result.user_answer|default:"未答" }}</p>
+                        <p><strong>正确答案：</strong> {{ result.correct_answer }}</p>
+                        <p><strong>结果：</strong> {{ result.result }}</p>
+                        <p><strong>得分：</strong> {% if result.result == '正确' %}{{ result.score }}{% else %}0{% endif %}</p>
+                    </div>
+                    
+                    {% if result.question.explanation %}
+                        <div class="explanation">
+                            <strong>解析：</strong>
+                            <p>{{ result.question.explanation }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            <a href="{% url 'wrong_question_notebook' %}" class="btn">
+                返回错题本
+            </a>
+        </div>
+    </div>
+{% endblock %}
