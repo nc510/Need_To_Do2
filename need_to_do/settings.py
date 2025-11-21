@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-3zwd_-@qck6g1%na&4c$uewlgrne7px8%s7$*jv2u7#t#@!=rz
 DEBUG = False
 
 # 生产环境应该设置具体的域名，而不是使用通配符
-ALLOWED_HOSTS = ['localhost', '127.0.0.1','192.168.1.188','218.200.147.116']  # 生产环境需要修改为实际的域名
+ALLOWED_HOSTS = ['localhost', '127.0.0.1','192.168.1.188','218.200.147.116','192.168.77.253']  # 生产环境需要修改为实际的域名
 
 # 安全相关设置
 SECURE_BROWSER_XSS_FILTER = True
