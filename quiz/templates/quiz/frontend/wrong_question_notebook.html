@@ -59,6 +59,21 @@
     <h1>错题本</h1>
     
     {% if wrong_questions %}
+        <!-- PDF导出按钮 -->
+        <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px; text-align: center;">
+            <p style="margin-bottom: 10px;"><strong>导出错题本为PDF:</strong></p>
+            <a href="{% url 'export_wrong_questions_pdf' %}?type=practice" 
+               class="btn btn-primary" 
+               style="margin: 0 10px; padding: 8px 20px; background-color: #28a745; border-color: #28a745; color: white; text-decoration: none; border-radius: 4px; cursor: pointer;">
+               导出练习版 (无答案解析)
+            </a>
+            <a href="{% url 'export_wrong_questions_pdf' %}?type=review" 
+               class="btn btn-info" 
+               style="margin: 0 10px; padding: 8px 20px; background-color: #007bff; border-color: #007bff; color: white; text-decoration: none; border-radius: 4px; cursor: pointer;">
+               导出复习版 (含答案解析)
+            </a>
+        </div>
+    
         <form method="post" action="{% url 'create_wrong_question_paper' %}">
             {% csrf_token %}
             <div class="form-group">

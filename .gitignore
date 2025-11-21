@@ -1,0 +1,40 @@
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+media/
+
+# Python
+venv/
+env/
+pyvenv.cfg
+
+# Testing
+test_output/
+.pytest_cache/
+.coverage
+
+# OS generated files
+Thumbs.db
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Production
+/static/
+/build/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

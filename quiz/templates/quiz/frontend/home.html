@@ -1,0 +1,216 @@
+{% extends 'quiz/frontend/base.html' %}
+
+{% block title %}首页 - 在线考试系统{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- 测试版本提示 -->
+    <div class="alert alert-info" role="alert">
+        <strong>版本提示：</strong> 本系统目前处于测试阶段，可能存在BUG，请理性评价，感谢您的反馈。<br>
+        <strong>联系方式：</strong> 18671151019 耿老师 微信同号
+    </div>
+    
+    <!-- 欢迎区域 -->
+    <div class="welcome-section">
+        <h1 class="welcome-title">欢迎使用在线考试系统</h1>
+        <p class="welcome-desc">本系统提供丰富理论学科的试卷练习，帮助您巩固知识，提高成绩。</p>
+        <div class="welcome-divider"></div>
+        <p>点击下方按钮开始您的学习之旅！</p>
+        <a class="welcome-button" href="{% url 'test_paper_list' %}" role="button">开始练习</a>
+    </div>
+    
+    <!-- 系统功能简介 -->
+    <div class="features-section">
+        <div class="feature-card">
+            <div class="feature-content">
+                <h5 class="feature-title">理论试卷</h5>
+                <p class="feature-desc">提供丰富的试卷资源，后续内容不断完善，满足不同学习需求。</p>
+            </div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-content">
+                <h5 class="feature-title">实时评分</h5>
+                <p class="feature-desc">完成答题后立即获得评分和详细解析，帮助您及时查漏补缺。</p>
+            </div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-content">
+                <h5 class="feature-title">学习记录</h5>
+                <p class="feature-desc">自动保存您的学习记录和成绩，方便您追踪学习进度和效果。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 自定义样式 - 与导航栏协调 */
+.alert-info {
+    background-color: #e8f5e9;
+    border-color: #c8e6c9;
+    color: #2e7d32;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.welcome-section {
+    background-color: #f1f8e9;
+    border-radius: 0.8rem;
+    padding: 2.5rem;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.welcome-title {
+    font-weight: 600;
+    color: #333;
+    font-size: 2.2rem;
+    margin-bottom: 1rem;
+}
+
+.welcome-desc {
+    font-size: 1.1rem;
+    color: #555;
+    margin-bottom: 1.5rem;
+}
+
+.welcome-divider {
+    width: 80px;
+    height: 3px;
+    background-color: #4CAF50;
+    margin: 0 auto 1.5rem;
+}
+
+.welcome-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 0.8rem 2rem;
+    font-size: 1.1rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.welcome-button:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+    color: white;
+}
+
+.features-section {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.feature-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    flex: 1 1 300px;
+    max-width: 350px;
+}
+
+.feature-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.feature-content {
+    padding: 1.5rem;
+}
+
+.feature-title {
+    color: #4CAF50;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    font-size: 1.2rem;
+}
+
+.feature-desc {
+    color: #555;
+    line-height: 1.6;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .welcome-section {
+        padding: 2rem 1.5rem;
+    }
+    
+    .welcome-title {
+        font-size: 1.8rem;
+    }
+    
+    .features-section {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .feature-card {
+        max-width: 100%;
+        margin-bottom: 1rem;
+    }
+}
+</style>
+
+<script>
+// 页面加载完成后的动画效果
+$(document).ready(function() {
+    // 欢迎区域淡入效果
+    $('.welcome-section').fadeIn(1000);
+    
+    // 功能卡片逐个显示
+    $('.feature-card').each(function(index) {
+        $(this).delay(index * 200).fadeIn(600);
+    });
+});
+</script>
+{% endblock %}
+
+{% block scripts %}
+    {{ block.super }}
+    <!-- 首页特定脚本 -->
+    <script>
+        // 页面加载完成后的动画效果
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化动画样式
+            const elements = document.querySelectorAll('.alert-info, .display-4, .btn-primary, .bg-light');
+            elements.forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            });
+            
+            // 依次显示元素
+            setTimeout(() => {
+                document.querySelector('.alert-info').style.opacity = '1';
+                document.querySelector('.alert-info').style.transform = 'translateY(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                document.querySelector('.display-4').style.opacity = '1';
+                document.querySelector('.display-4').style.transform = 'translateY(0)';
+            }, 300);
+            
+            setTimeout(() => {
+                document.querySelector('.bg-light').style.opacity = '1';
+                document.querySelector('.bg-light').style.transform = 'translateY(0)';
+            }, 500);
+            
+            setTimeout(() => {
+                document.querySelector('.btn-primary').style.opacity = '1';
+                document.querySelector('.btn-primary').style.transform = 'translateY(0)';
+            }, 700);
+        });
+    </script>
+{% endblock %}

@@ -224,24 +224,24 @@
                                 <input type="radio" name="question_{{ question.id }}" value="D" id="id_question_{{ question.id }}_D" style="display: none;">
                                 <!-- Visual options -->
                                 {% if 'A' in question.options %}
-                                    <div class="option" data-option="A">A. {{ question.options.A }}</div>
+                                    <div class="option" data-option="A">{{ question.options.A }}</div>
                                 {% elif 'a' in question.options %}
-                                    <div class="option" data-option="A">A. {{ question.options.a }}</div>
+                                    <div class="option" data-option="A">{{ question.options.a }}</div>
                                 {% endif %}
                                 {% if 'B' in question.options %}
-                                    <div class="option" data-option="B">B. {{ question.options.B }}</div>
+                                    <div class="option" data-option="B">{{ question.options.B }}</div>
                                 {% elif 'b' in question.options %}
-                                    <div class="option" data-option="B">B. {{ question.options.b }}</div>
+                                    <div class="option" data-option="B">{{ question.options.b }}</div>
                                 {% endif %}
                                 {% if 'C' in question.options %}
-                                    <div class="option" data-option="C">C. {{ question.options.C }}</div>
+                                    <div class="option" data-option="C">{{ question.options.C }}</div>
                                 {% elif 'c' in question.options %}
-                                    <div class="option" data-option="C">C. {{ question.options.c }}</div>
+                                    <div class="option" data-option="C">{{ question.options.c }}</div>
                                 {% endif %}
                                 {% if 'D' in question.options %}
-                                    <div class="option" data-option="D">D. {{ question.options.D }}</div>
+                                    <div class="option" data-option="D">{{ question.options.D }}</div>
                                 {% elif 'd' in question.options %}
-                                    <div class="option" data-option="D">D. {{ question.options.d }}</div>
+                                    <div class="option" data-option="D">{{ question.options.d }}</div>
                                 {% endif %}
                             {% else %} <!-- 判断题 -->
                                 <!-- Hidden radio inputs -->
@@ -264,7 +264,51 @@
                 <span id="question-counter">1/{{ test_paper.questions.count }}</span>
                 <button type="button" id="next-question">下一题</button>
             </div>
-            <style>.question-navigation { margin: 20px 0; text-align: center; }</style>
+            <style>
+            .question-navigation {
+                margin: 30px 0;
+                text-align: center;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 25px; /* 增加按钮间距防止误点 */
+            }
+            #prev-question,
+            #next-question {
+                padding: 12px 24px; /* 增加按钮大小 */
+                font-size: 16px; /* 增大字体 */
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                background-color: #3498db;
+                color: white;
+                min-width: 100px; /* 确保按钮有足够宽度 */
+                font-weight: 500;
+            }
+            #prev-question:hover:not(:disabled),
+            #next-question:hover:not(:disabled) {
+                background-color: #2980b9;
+                transform: translateY(-2px); /* 轻微上移效果 */
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* 增加阴影效果 */
+            }
+            #prev-question:active:not(:disabled),
+            #next-question:active:not(:disabled) {
+                transform: translateY(0); /* 点击时恢复原位 */
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); /* 减少阴影 */
+            }
+            #prev-question:disabled {
+                background-color: #bdc3c7;
+                cursor: not-allowed;
+                color: #7f8c8d;
+            }
+            #question-counter {
+                font-size: 18px;
+                font-weight: bold;
+                color: #2c3e50;
+                min-width: 80px;
+            }
+            </style>
             
             <button type="submit" class="submit-btn">提交答案</button>
         </form>

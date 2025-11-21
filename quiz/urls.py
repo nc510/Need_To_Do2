@@ -2,6 +2,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # 首页路由
+    path('', views.home, name='home'),
+    
     path('test_paper_list/', views.test_paper_list, name='test_paper_list'),  # 试卷列表
     
     path('question/<int:question_id>/', views.question_detail, name='question_detail'),
@@ -18,4 +21,5 @@ urlpatterns = [
     path('create_wrong_question_paper/', views.create_wrong_question_paper, name='create_wrong_question_paper'),  # 错题本组卷
     path('submit_wrong_question_paper/', views.submit_wrong_question_paper, name='submit_wrong_question_paper'),  # 错题本试卷提交
     path('delete_wrong_question/<int:wrong_question_id>/', views.delete_wrong_question, name='delete_wrong_question'),  # 删除错题
+    path('export_wrong_questions_pdf/', views.export_wrong_questions_pdf, name='export_wrong_questions_pdf'),  # 错题本PDF导出
 ]

@@ -1,15 +1,21 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 from django.contrib import messages
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Q
 from django.db import IntegrityError
-from django.contrib.auth.models import User
-from .models import Question, TestPaper, Profile, TestRecord, AnswerRecord, WrongQuestion
-import pandas as pd
-import json
+import datetime
 import re
+from django.contrib.auth.models import User
+from quiz.models import Question, TestPaper, Profile, TestRecord, AnswerRecord, WrongQuestion
+
+# 首页视图函数
+def home(request):
+    """首页视图，展示测试版本提示和试卷练习引导"""
+    return render(request, 'quiz/frontend/home.html')
 
 # 答题视图
 def question_detail(request, question_id):
@@ -176,6 +182,7 @@ def register(request):
         password = request.POST.get('password')
         password_confirm = request.POST.get('password_confirm')
         email = request.POST.get('email')
+        name = request.POST.get('name')
         phone_number = request.POST.get('phone_number')
         qq_number = request.POST.get('qq_number')
         
@@ -214,7 +221,9 @@ def register(request):
                 email=email
             )
             
-            # 保存手机号码和QQ号码到Profile
+            # 保存姓名、手机号码和QQ号码到Profile
+            if name:
+                user.profile.name = name
             if phone_number:
                 user.profile.phone_number = phone_number
             if qq_number:
@@ -278,7 +287,22 @@ def logout_view(request):
 # 用户中心视图
 @login_required
 def user_center(request):
-    return render(request, 'quiz/frontend/user_center.html')
+    # 获取用户的个人信息
+    user = request.user
+    profile = user.profile
+    
+    # 将User模型的last_login同步到Profile模型
+    if user.last_login and (not profile.last_login or user.last_login > profile.last_login):
+        profile.last_login = user.last_login
+        profile.save()
+    
+    # 准备传递给模板的数据
+    context = {
+        'user': user,
+        'profile': profile,
+    }
+    
+    return render(request, 'quiz/frontend/user_center.html', context)
 
 # 答题历史记录视图
 @login_required
@@ -432,3 +456,55 @@ def submit_wrong_question_paper(request):
         })
     
     return redirect('create_wrong_question_paper')
+
+# 错题本PDF导出视图
+@login_required
+def export_wrong_questions_pdf(request):
+    from .pdf_generator import WrongQuestionPDFGenerator
+    from django.http import HttpResponse
+    from django.utils import timezone
+    
+    # 获取导出类型参数，默认为练习版
+    export_type = request.GET.get('type', 'practice')
+    
+    # 验证导出类型参数
+    if export_type not in ['practice', 'review']:
+        messages.error(request, '无效的导出类型')
+        return redirect('wrong_question_notebook')
+    
+    # 获取当前用户的所有错题，按添加时间倒序排序
+    wrong_questions = WrongQuestion.objects.filter(user=request.user).order_by('-added_at')
+    
+    if not wrong_questions.exists():
+        messages.info(request, '您的错题本中没有题目')
+        return redirect('wrong_question_notebook')
+    
+    try:
+        # 创建PDF生成器实例
+        pdf_generator = WrongQuestionPDFGenerator()
+        
+        # 根据导出类型生成PDF
+        if export_type == 'practice':
+            pdf_buffer = pdf_generator.generate_practice_pdf(wrong_questions, request.user)
+            # 生成日期时间格式的文件名：练习版_YYYYMMDD_HHMMSS.pdf
+            export_time = timezone.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'练习版_{export_time}.pdf'
+        else:
+            pdf_buffer = pdf_generator.generate_review_pdf(wrong_questions, request.user)
+            # 生成日期时间格式的文件名：复习版_YYYYMMDD_HHMMSS.pdf
+            export_time = timezone.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'复习版_{export_time}.pdf'
+        
+        # 创建HTTP响应，返回PDF文件
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+    except Exception as e:
+        # 捕获所有可能的异常
+        messages.error(request, f'PDF生成失败: {str(e)}')
+        return redirect('wrong_question_notebook')
+
+def home(request):
+    """首页视图函数"""
+    return render(request, 'quiz/frontend/home.html')

@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django import forms
-from .models import Question, TestPaper, Profile
+from .models import Question, TestPaper, Profile, TestRecord, AnswerRecord, WrongQuestion
 import pandas as pd
 import json
 import logging
@@ -11,22 +11,65 @@ import logging
 # 配置日志记录
 logger = logging.getLogger(__name__)
 
+# 基础ModelAdmin类，为所有模型提供一致的权限控制
+class BaseStaffAdmin(admin.ModelAdmin):
+    """
+    基础ModelAdmin类，为staff用户提供一致的权限控制
+    staff用户可以查看和编辑，但不能删除数据
+    """
+    
+    def has_view_permission(self, request, obj=None):
+        """控制查看权限"""
+        # 超级用户始终有查看权限
+        if request.user.is_superuser:
+            return True
+        # staff用户需要有相应的view权限
+        return request.user.has_perm(f'quiz.view_{self.model._meta.model_name}')
+    
+    def has_change_permission(self, request, obj=None):
+        """控制编辑权限"""
+        # 超级用户始终有编辑权限
+        if request.user.is_superuser:
+            return True
+        # staff用户需要有相应的change权限
+        return request.user.has_perm(f'quiz.change_{self.model._meta.model_name}')
+    
+    def has_delete_permission(self, request, obj=None):
+        """控制删除权限 - 只有超级用户才能删除"""
+        return request.user.is_superuser
+    
+    def has_add_permission(self, request):
+        """控制添加权限"""
+        # 超级用户始终有添加权限
+        if request.user.is_superuser:
+            return True
+        # staff用户需要有相应的add权限
+        return request.user.has_perm(f'quiz.add_{self.model._meta.model_name}')
+
 class QuestionImportForm(forms.Form):
     excel_file = forms.FileField(label='Excel文件')
 
-class ProfileAdmin(admin.ModelAdmin):
+class ProfileAdmin(BaseStaffAdmin):
     list_display = ('user', 'approval_status', 'created_at', 'updated_at')
     list_filter = ('approval_status', 'created_at')
     search_fields = ('user__username', 'user__email')
     ordering = ('-created_at',)
 
-class QuestionAdmin(admin.ModelAdmin):
+class QuestionAdmin(BaseStaffAdmin):
     list_display = ('id', 'type', 'content', 'score', 'created_at')
     list_filter = ('type', 'created_at')
     search_fields = ('content', 'explanation')
     ordering = ('-created_at',)
     change_list_template = 'admin/quiz/question/change_list.html'
     actions = ['batch_delete_questions']  # 添加自定义批量删除动作
+    
+    def get_actions(self, request):
+        """根据用户权限显示或隐藏动作"""
+        actions = super().get_actions(request)
+        # 只有超级用户才能看到批量删除动作
+        if not request.user.is_superuser and 'batch_delete_questions' in actions:
+            del actions['batch_delete_questions']
+        return actions
     
     def batch_delete_questions(self, request, queryset):
         """批量删除题目，使用分批处理避免超时"""
@@ -174,74 +217,77 @@ class QuestionAdmin(admin.ModelAdmin):
 class TestPaperImportForm(forms.Form):
     import_file = forms.FileField(label='Excel文件', required=True)
 
-class TestPaperAdmin(admin.ModelAdmin):
+class TestPaperAdmin(BaseStaffAdmin):
     list_display = ('id', 'title', 'total_score', 'is_published', 'created_by', 'created_at')
     
     def changelist_view(self, request, extra_context=None):
-        if request.method == 'POST' and '_import' in request.POST:
-            import_form = TestPaperImportForm(request.POST, request.FILES)
-            if import_form.is_valid():
-                uploaded_file = import_form.cleaned_data['import_file']
-                try:
-                    df = pd.read_excel(uploaded_file)
-                    for index, row in df.iterrows():
-                        # Skip empty rows
-                        if row.isnull().all():
-                            continue
-                        # Handle question type mapping (只使用模型中定义的有效题型值)
-                        question_type_mapping = {'单选题': 1, '多选题': 1, '判断题': 2}
-                        question_type = row.get('类型', '单选题')
-                        # 将所有非判断题映射为选择题(1)，判断题映射为2
-                        question_type_int = 1  # 默认选择题
-                        if question_type in question_type_mapping:
-                            question_type_int = question_type_mapping[question_type]
-                        elif '判断' in question_type:
-                            question_type_int = 2
-                        
-                        # 转换选项为JSON格式
-                        options = {}
-                        # 检查中英文两种列名格式
-                        for option_key in ['A', 'B', 'C', 'D']:
-                            # 先检查中文列名（例如：选项A）
-                            ch_column_name = f'选项{option_key}'
-                            if ch_column_name in row and pd.notnull(row[ch_column_name]):
-                                options[option_key] = row[ch_column_name]
-                            # 再检查英文列名（例如：A）
-                            elif option_key in row and pd.notnull(row[option_key]):
-                                options[option_key] = row[option_key]
-                            # 还可以检查其他可能的列名格式
-                            elif f'Option {option_key}' in row and pd.notnull(row[f'Option {option_key}']):
-                                options[option_key] = row[f'Option {option_key}']
-                            elif f'option_{option_key}' in row and pd.notnull(row[f'option_{option_key}']):
-                                options[option_key] = row[f'option_{option_key}']
-                        # 处理正确选项，确保格式标准化
-                        correct_answer = row.get('正确选项', '')
-                        if pd.notnull(correct_answer):
-                            if isinstance(correct_answer, str):
-                                # 去除首尾空格
-                                correct_answer = correct_answer.strip()
-                                # 确保答案是大写字母
-                                correct_answer = correct_answer.upper()
-                            else:
-                                # 处理非字符串类型的答案（如数字等）
-                                correct_answer = str(correct_answer).strip().upper()
-                        
-                        question = Question(
-                            type=question_type_int,
-                            content=row.get('题目', ''),
-                            options=options,
-                            correct_answer=correct_answer,
-                            score=row.get('分值', 1),
-                            explanation=row.get('解析', '')
-                        )
-                        question.save()
-                    messages.success(request, f'成功导入{len(df)}道题目')
-                except Exception as e:
-                    messages.error(request, f'导入失败: {str(e)}')
-                return HttpResponseRedirect(reverse('admin:quiz_question_changelist'))
+        # 只有超级用户或有add_question权限的用户才能导入题目
+        if request.user.is_superuser or request.user.has_perm('quiz.add_question'):
+            if request.method == 'POST' and '_import' in request.POST:
+                import_form = TestPaperImportForm(request.POST, request.FILES)
+                if import_form.is_valid():
+                    uploaded_file = import_form.cleaned_data['import_file']
+                    try:
+                        df = pd.read_excel(uploaded_file)
+                        for index, row in df.iterrows():
+                            # Skip empty rows
+                            if row.isnull().all():
+                                continue
+                            # Handle question type mapping (只使用模型中定义的有效题型值)
+                            question_type_mapping = {'单选题': 1, '多选题': 1, '判断题': 2}
+                            question_type = row.get('类型', '单选题')
+                            # 将所有非判断题映射为选择题(1)，判断题映射为2
+                            question_type_int = 1  # 默认选择题
+                            if question_type in question_type_mapping:
+                                question_type_int = question_type_mapping[question_type]
+                            elif '判断' in question_type:
+                                question_type_int = 2
+                            
+                            # 转换选项为JSON格式
+                            options = {}
+                            # 检查中英文两种列名格式
+                            for option_key in ['A', 'B', 'C', 'D']:
+                                # 先检查中文列名（例如：选项A）
+                                ch_column_name = f'选项{option_key}'
+                                if ch_column_name in row and pd.notnull(row[ch_column_name]):
+                                    options[option_key] = row[ch_column_name]
+                                # 再检查英文列名（例如：A）
+                                elif option_key in row and pd.notnull(row[option_key]):
+                                    options[option_key] = row[option_key]
+                                # 还可以检查其他可能的列名格式
+                                elif f'Option {option_key}' in row and pd.notnull(row[f'Option {option_key}']):
+                                    options[option_key] = row[f'Option {option_key}']
+                                elif f'option_{option_key}' in row and pd.notnull(row[f'option_{option_key}']):
+                                    options[option_key] = row[f'option_{option_key}']
+                            # 处理正确选项，确保格式标准化
+                            correct_answer = row.get('正确选项', '')
+                            if pd.notnull(correct_answer):
+                                if isinstance(correct_answer, str):
+                                    # 去除首尾空格
+                                    correct_answer = correct_answer.strip()
+                                    # 确保答案是大写字母
+                                    correct_answer = correct_answer.upper()
+                                else:
+                                    # 处理非字符串类型的答案（如数字等）
+                                    correct_answer = str(correct_answer).strip().upper()
+                            
+                            question = Question(
+                                type=question_type_int,
+                                content=row.get('题目', ''),
+                                options=options,
+                                correct_answer=correct_answer,
+                                score=row.get('分值', 1),
+                                explanation=row.get('解析', '')
+                            )
+                            question.save()
+                        messages.success(request, f'成功导入{len(df)}道题目')
+                    except Exception as e:
+                        messages.error(request, f'导入失败: {str(e)}')
+                    return HttpResponseRedirect(reverse('admin:quiz_question_changelist'))
+            
+            extra_context = extra_context or {}
+            extra_context['import_form'] = TestPaperImportForm()
         
-        extra_context = extra_context or {}
-        extra_context['import_form'] = TestPaperImportForm()
         return super().changelist_view(request, extra_context=extra_context)
     
     list_filter = ('is_published', 'created_at')
@@ -251,8 +297,35 @@ class TestPaperAdmin(admin.ModelAdmin):
     change_form_template = 'admin/quiz/testpaper/change_form.html'  # 使用自定义表单模板
     change_list_template = 'admin/quiz/testpaper/change_list.html'  # 使用自定义列表模板
 
+# 注册其他模型，使用基础权限控制
+class TestRecordAdmin(BaseStaffAdmin):
+    list_display = ('user', 'test_paper', 'score', 'total_score', 'completed_at')
+    list_filter = ('completed_at', 'test_paper')
+    search_fields = ('user__username', 'test_paper__title')
+    ordering = ('-completed_at',)
+    # 记录类通常只用于查看，禁用编辑
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+class AnswerRecordAdmin(BaseStaffAdmin):
+    list_display = ('test_record', 'question', 'user_answer', 'correct_answer', 'is_correct')
+    list_filter = ('is_correct',)
+    search_fields = ('question__content', 'test_record__user__username')
+    # 记录类通常只用于查看，禁用编辑
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+class WrongQuestionAdmin(BaseStaffAdmin):
+    list_display = ('user', 'question', 'added_at')
+    list_filter = ('added_at',)
+    search_fields = ('user__username', 'question__content')
+    ordering = ('-added_at',)
+
 
 
 admin.site.register(Question, QuestionAdmin)
 admin.site.register(TestPaper, TestPaperAdmin)
 admin.site.register(Profile, ProfileAdmin)
+admin.site.register(TestRecord, TestRecordAdmin)
+admin.site.register(AnswerRecord, AnswerRecordAdmin)
+admin.site.register(WrongQuestion, WrongQuestionAdmin)

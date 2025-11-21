@@ -2,6 +2,7 @@
 {% block title %}答题记录详情{% endblock %}
 {% block extra_styles %}
 <style>
+        /* 基础样式 */
         .record-container {
             max-width: 900px;
             margin: 0 auto;
@@ -52,6 +53,7 @@
         }
         .question-header {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             margin-bottom: 15px;
             padding-bottom: 10px;
@@ -71,6 +73,7 @@
             line-height: 1.6;
             margin-bottom: 15px;
             padding: 0 10px;
+            word-wrap: break-word;
         }
         .question-type {
             font-size: 14px;
@@ -108,7 +111,9 @@
             width: 25px;
         }
         .option span {
-            margin-left: 30px;
+            padding-left: 30px;
+            display: block;
+            word-wrap: break-word;
         }
         .option.user-selected {
             background-color: #ffebee;
@@ -129,6 +134,7 @@
             margin: 10px 0;
             font-size: 15px;
             color: #333;
+            word-wrap: break-word;
         }
         .answers strong {
             color: #2c3e50;
@@ -150,6 +156,7 @@
             margin: 8px 0;
             color: #333;
             line-height: 1.6;
+            word-wrap: break-word;
         }
         .correct {
             color: #4CAF50;
@@ -158,6 +165,120 @@
         .incorrect {
             color: #f44336;
             font-weight: bold;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .record-container {
+                padding: 10px;
+            }
+            .record-header {
+                padding: 15px;
+                margin-bottom: 15px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            }
+            h1 {
+                font-size: 22px;
+                margin-bottom: 10px;
+            }
+            .record-header h2 {
+                font-size: 18px;
+                margin-bottom: 10px;
+                word-wrap: break-word;
+            }
+            .record-header p {
+                font-size: 14px;
+                margin: 5px 0;
+            }
+            .questions-container {
+                padding: 15px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            }
+            .question-item {
+                margin-bottom: 20px;
+                padding: 15px;
+                box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+            }
+            .question-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .question-number {
+                font-size: 18px;
+                margin-right: 0;
+                margin-bottom: 5px;
+            }
+            .question-content {
+                font-size: 16px;
+                padding: 0;
+                width: 100%;
+            }
+            .question-type {
+                margin-left: 0;
+                margin-top: 5px;
+                align-self: flex-start;
+            }
+            .options {
+                margin: 15px 0;
+                padding-left: 0;
+            }
+            .option {
+                margin: 8px 0;
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+            .option::before {
+                left: 10px;
+                font-size: 14px;
+            }
+            .option span {
+                padding-left: 25px;
+            }
+            .answers {
+                margin: 15px 0;
+                padding: 12px;
+            }
+            .answers p {
+                margin: 8px 0;
+                font-size: 14px;
+            }
+            .explanation {
+                margin: 15px 0;
+                padding: 15px;
+                font-size: 14px;
+            }
+            .explanation strong {
+                margin-bottom: 5px;
+            }
+            .explanation p {
+                margin: 6px 0;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .record-container {
+                padding: 8px;
+            }
+            .record-header {
+                padding: 12px;
+            }
+            h1 {
+                font-size: 20px;
+            }
+            .record-header h2 {
+                font-size: 16px;
+            }
+            .question-item {
+                padding: 12px;
+            }
+            .question-content {
+                font-size: 15px;
+            }
+            .option {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
         }
 </style>
 {% endblock %}
