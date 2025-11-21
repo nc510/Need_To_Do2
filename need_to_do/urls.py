@@ -25,6 +25,5 @@ urlpatterns = [
     path('', RedirectView.as_view(url='/quiz/test_paper_list/')),
 ]
 
-# 在DEBUG=False的情况下，也能通过开发服务器提供静态文件
-if not settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+# WhiteNoise will serve static files in production
+# No need to add static URL patterns for production
