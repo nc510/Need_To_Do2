@@ -22,7 +22,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('quiz/', include('quiz.urls')),
-    path('', RedirectView.as_view(url='/quiz/test_paper_list/')),
+    path('', RedirectView.as_view(url='/quiz/')),
 ]
 
 # WhiteNoise will serve static files in production
