@@ -341,7 +341,7 @@
                     {% endif %}
                     
                     <div class="answers">
-                        <p><strong>您的答案：</strong> {{ result.user_answer|default:"未答" }}</p>
+                        <p><strong>你的答案：</strong> {{ result.user_answer|default:"未答" }}</p>
                         <p><strong>正确答案：</strong> {{ result.correct_answer }}</p>
                         <p><strong>结果：</strong> {{ result.result }}</p>
                         <p><strong>得分：</strong> {% if result.result == '正确' %}{{ result.score }}{% else %}0{% endif %}</p>
